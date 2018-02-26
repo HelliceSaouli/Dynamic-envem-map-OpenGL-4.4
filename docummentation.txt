@@ -1,0 +1,74 @@
+this is a  rendering engine. 
+i start by creating a cube map i fixed the camera controls form diffrent versions 
+i add a an obj reader. i can put more than one object in the scene i can put dffrent shaders.
+
+/******************************************************************************************************/
+*	reserve code for dynamic cubemap																  *
+*******************************************************************************************************/
+
+/******************* FBO for dynamic rendering of cube map ******************************/
+void TextureGL::CreateFBOCubeMap(int w,int h)
+{
+
+	//1-generate the depth buffer for the cube map
+
+	glGenTextures(1, &this->_mdepthTexture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, this->_mdepthTexture);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	// loop throw the 6 faces of the cube
+	for(int i = 0 ; i < 6; i ++)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0,GL_DEPTH_COMPONENT24,w,h,0,GL_DEPTH_COMPONENT,GL_FLOAT,NULL);
+
+
+	// 2-generate the color buffer for the cube map simple as we did in  cubemapTexture function
+	glGenTextures(1,&this->_mTexture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, this->_mTexture);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	// loop throw the 6 faces of the cube again
+
+	for(int i = 0; i < 6; i++)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0,GL_RGB,w,h,0,GL_RGB,GL_FLOAT,NULL);
+
+
+	//3- generate the FBO
+    glGenFramebuffers(1,&this->_mFrameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER,this->_mFrameBuffer);
+
+    //4-attach CubeMap to FBO
+    glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, this->_mTexture, 0);
+    glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, this->_mdepthTexture, 0);
+
+    //5- specifiy which buffer will draw
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    //6- check if every thing is ok
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        	std::cerr <<" WARNING : FBO failed"<<std::endl;
+
+
+    //7- unbind after done creating
+    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void TextureGL::BindFBOAsRenderTaget()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, this->_mFrameBuffer);
+}
+
+void TextureGL::UbindFBOAsRenderTarget()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER,0);
+}
+
